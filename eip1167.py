@@ -374,6 +374,31 @@ class CloneFactory:
         """The 45-byte runtime code stored at a clone's address."""
         return self._clones[to_checksum_address(clone)]["code"]
 
+    def clones_of(self, implementation: str) -> list[str]:
+        """All deployed clone addresses delegating to ``implementation``.
+
+        Sorted, so a factory audit is deterministic. Useful for an operator
+        sweeping every clone of one logic contract (e.g. to upgrade them).
+
+        >>> factory = CloneFactory()
+        >>> impl_a, impl_b = "0x" + "ab" * 20, "0x" + "cd" * 20
+        >>> deployer = "0x" + "11" * 20
+        >>> a1 = factory.deploy(impl_a, deployer)
+        >>> b1 = factory.deploy_create2(impl_b, deployer, salt=(1).to_bytes(32, "big"))
+        >>> a2 = factory.deploy(impl_a, deployer)
+        >>> factory.clones_of(impl_a) == sorted([a1, a2])
+        True
+        >>> factory.clones_of(impl_b) == [b1]
+        True
+        >>> factory.clones_of("0x" + "ff" * 20)
+        []
+        """
+        target = to_checksum_address(implementation)
+        return sorted(
+            addr for addr, entry in self._clones.items()
+            if entry["implementation"] == target
+        )
+
     def call(self, clone: str, method: str, *args):
         """Call ``method`` on a clone (delegatecall into the logic)."""
         entry = self._clones[to_checksum_address(clone)]
