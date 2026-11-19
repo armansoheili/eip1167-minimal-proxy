@@ -399,6 +399,27 @@ class CloneFactory:
             if entry["implementation"] == target
         )
 
+    def clone_count(self, implementation: str | None = None) -> int:
+        """Number of clones deployed (optionally only of ``implementation``).
+
+        >>> factory = CloneFactory()
+        >>> factory.clone_count()
+        0
+        >>> impl = "0x" + "ab" * 20
+        >>> deployer = "0x" + "11" * 20
+        >>> _ = factory.deploy(impl, deployer)
+        >>> _ = factory.deploy(impl, deployer)
+        >>> factory.clone_count()
+        2
+        >>> factory.clone_count(impl)
+        2
+        >>> factory.clone_count("0x" + "ff" * 20)
+        0
+        """
+        if implementation is None:
+            return len(self._clones)
+        return len(self.clones_of(implementation))
+
     def call(self, clone: str, method: str, *args):
         """Call ``method`` on a clone (delegatecall into the logic)."""
         entry = self._clones[to_checksum_address(clone)]
